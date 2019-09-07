@@ -21,7 +21,7 @@ data(murders)
 1. What is the state with the most murders? Would you say this is the 
 most dangerous state? Hint: Make a plot showing the relationship between population size and number of murders.
 
-2. Add a column to the murder data table called `murder_rate` with each state's murder rate.
+2. Add a column to the murder data table called `murder_rate` with each state's murder rate per 100,000 people.
 
 3. Describe the distribution of murder rates across states. How similar are states? How much do murder rates vary by geographical regions?
 
