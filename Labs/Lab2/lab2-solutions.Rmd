@@ -1,0 +1,134 @@
+---
+title: 'Lab 2: Basic R'
+output: html_document
+---
+Let's get more comfortable writing R code and documenting our results.
+
+As you have seen in lecture, we'll be using RMarkdown files almost exclusively. There are several options when creating a new file in RStudio, but I find that RMarkdown files are the best when starting out. One of the reasons being that you can have both nice-looking text (regular, markdown, latex) and code in the same document. This is especially convenient for collaborating with others and making your work as reproducible as possible.
+
+Let's look at a few R and plotting examples. Be sure to include text answers where appropriate.
+
+Recall the `murders` dataset from class. Using a scatterplot of total murders versus population we saw evidence of a strong relationship: states with larger populations had more murders.
+
+```{r, message=FALSE, first-plot}
+library(dplyr)
+library(dslabs)
+data(murders)
+population_in_millions <- murders$population/10^6
+total_gun_murders <- murders$total
+plot(population_in_millions, total_gun_murders)
+```
+
+Note that many states have populations below 5 million and are bunched up. We may gain further insights from making this plot in the log scale.
+
+1. Transform the variables using the `log10` transformation and then plot them. What do you notice?
+
+```{r}
+log_pop <- log10(murders$population/10^6)
+log_murders <- log10(murders$total)
+plot(log_pop, log_murders)
+```
+
+The bunched up points in the previous plot are now more spread out and easier to see.
+
+
+2. Create a histogram of the state populations. Is it symmetric, left-skewed or right-skewed?
+
+```{r}
+hist(murders$population)
+```
+
+It is right-skewed. This makes sense since only a few states have large populations.
+
+
+3. Generate boxplots of the state populations by region. Are there any outliers? Which region has the largest median population?
+
+```{r}
+boxplot(population ~ region, data = murders)
+```
+
+Yes, there are outliers in the South and West regions. The North Central region has the largest median population.
+
+Now let's practice writing our own functions - an invaluable skill for a data scientist.
+
+4. Create a function `sum_n` that for any given value, say $n$, computes the sum of the integers from 1 to n (inclusive). Use the function to determine the sum of integers from 1 to 5,000.
+
+```{r}
+sum_n <- function(n) {
+    x <- 1:n
+    sum(x)
+}
+sum_n(5000)
+```
+
+5. Create a function `altman_plot` that takes two arguments `x` and `y` and plots the difference against the sum.
+
+```{r}
+altman_plot <- function(x, y) {
+    diff_xy <- x - y
+    sum_xy <- x + y
+    plot(sum_xy, diff_xy, main = "Altman Plot of X and Y",
+    xlab = "X + Y", ylab = "X - Y")
+}
+x <- 1:10
+y <- x * 2
+altman_plot(x, y)
+```
+
+6. After running the code below, what is the value of `x`?
+
+```{r}
+x <- 3
+my_func <- function(y){
+    x <- 5
+    y + 5
+}
+```
+
+Still 3. First, we just defined `my_func` but did not run it, so anything inside the curly braces would not be executed until we called `my_func` using `my_func(2)` (pass in any number for y).
+
+Further, even if we ran `my_func`, the `x` inside the function does not affect the value of `x` outside the function, nor is it visible outside the function. In computer science terms, we say that the *scope* of the `x` inside the function is only within the set of curly braces. Therefore, when we execute `x` after executing `my_func(2)`, the value printed is still 3.
+
+```{r}
+x <- 3
+my_func <- function(y){
+    x <- 5
+    y + 5
+}
+x
+my_func(2)
+x
+```
+
+7. Write a function `compute_s_n` that for any given $n$ computes the sum $S_n = 1^2 + 2^2 + 3^2 + \dots + n^2$. Report the value of the sum when $n=10$.
+
+```{r}
+compute_s_n <- function(n) {
+    x <- 1:n
+    sum(x^2)
+}
+compute_s_n(10)
+```
+
+8. Now define an empty numerical vector `s_n` of size 25 using `s_n <- vector("numeric", 25)` and store in the results of $S_1, S_2, \dots S_{25}$.
+
+```{r}
+s_n <- vector("numeric", 25)
+for (i in 1:25) {
+    s_n[i] <- compute_s_n(i)
+}
+```
+
+9. Plot $S_n$ versus $n$. Use points defined by $n = 1,\dots, 25$.
+
+```{r}
+n <- 1:25
+plot(n, s_n)
+```
+
+10. Confirm that the formula for this sum is $S_n = \frac{n(n+1)(2n+1)}{6}$ by adding an appropriate line to the plot above.
+
+```{r}
+plot(n, s_n)
+lines(n, n * (n + 1) * (2 * n + 1) / 6)
+```

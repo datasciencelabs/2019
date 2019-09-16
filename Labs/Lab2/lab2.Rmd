@@ -1,0 +1,92 @@
+---
+title: 'Lab 2: Basic R'
+output: html_document
+---
+Let's get more comfortable writing R code and documenting our results.
+
+As you have seen in lecture, we'll be using RMarkdown files almost exclusively. There are several options when creating a new file in RStudio, but I find that RMarkdown files are the best when starting out. One of the reasons being that you can have both nice-looking text (regular, markdown, latex) and code in the same document. This is especially convenient for collaborating with others and making your work as reproducible as possible.
+
+Let's look at a few R and plotting examples. Be sure to include text answers where appropriate.
+
+Recall the `murders` dataset from class. Using a scatterplot of total murders versus population we saw evidence of a strong relationship: states with larger populations had more murders.
+
+```{r, message=FALSE, first-plot}
+library(dplyr)
+library(dslabs)
+data(murders)
+population_in_millions <- murders$population/10^6
+total_gun_murders <- murders$total
+plot(population_in_millions, total_gun_murders)
+```
+
+Note that many states have populations below 5 million and are bunched up. We may gain further insights from making this plot in the log scale.
+
+1. Transform the variables using the `log10` transformation and then plot them. What do you notice?
+
+```{r}
+# Your code here
+```
+
+
+2. Create a histogram of the state populations. Is it symmetric, left-skewed or right-skewed?
+
+```{r}
+# Your code here
+```
+
+
+3. Generate boxplots of the state populations by region. Are there any outliers? Which region has the largest median population?
+
+```{r}
+# Your code here
+```
+
+
+Now let's practice writing our own functions - an invaluable skill for a data scientist.
+
+4. Create a function `sum_n` that for any given value, say $n$, computes the sum of the integers from 1 to n (inclusive). Use the function to determine the sum of integers from 1 to 5,000.
+
+```{r}
+# Your code here
+```
+
+5. Create a function `altman_plot` that takes two arguments `x` and `y` and plots the difference against the sum.
+
+```{r}
+# Your code here
+```
+
+6. After running the code below, what is the value of `x`?
+
+```{r}
+x <- 3
+my_func <- function(y){
+    x <- 5
+    y+5
+}
+```
+
+
+7. Write a function `compute_s_n` that for any given $n$ computes the sum $S_n = 1^2 + 2^2 + 3^2 + \dots + n^2$. Report the value of the sum when $n=10$.
+
+```{r}
+# Your code here
+```
+
+8. Now define an empty numerical vector `s_n` of size 25 using `s_n <- vector("numeric", 25)` and store in the results of $S_1, S_2, \dots S_{25}$.
+
+```{r}
+# Your code here
+```
+
+9. Plot $S_n$ versus $n$. Use points defined by $n = 1,\dots, 25$.
+
+```{r}
+# Your code here
+```
+
+10. Confirm that the formula for this sum is $S_n = \frac{n(n+1)(2n+1)}{6}$ by adding an appropriate line to the plot above.
+
+```{r}
+# Your code here
+```
