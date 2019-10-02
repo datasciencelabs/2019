@@ -1,0 +1,104 @@
+---
+title: 'Lab 3: Visualization with ggplot2'
+output: html_document
+---
+
+This week we introduced how to make more esthetically pleasing plots using `ggplot2`. For the remainder of the course you'll be expected to use `ggplot2` any time you create a plot. Many more plotting examples will be presented in class, but let's get more practice now.
+
+Recall this figure from the `intro-to-ggplot.Rmd` lecture file:
+
+```{r, message=FALSE, echo=FALSE}
+library(ggplot2)
+library(dplyr)
+library(dslabs)
+murders %>% ggplot() + 
+            geom_point(aes(population/10^6, total), size = 3) +
+            geom_text(aes(population/10^6, total, label = abb), nudge_x = 2)
+```
+
+
+Remake the plot above but 
+
+1. flip the variables so that `total` is in the x-axis and `population` is in the y-axis 
+2. show the state names instead of the abbreviation
+3. make the points smaller
+
+```{r, message=FALSE}
+#Your code here.
+```
+
+### Grids of plots
+Rather than using `facet_wrap` or `facet_grid`, there is another option for graphing plots next to each other: the `gridExtra` package permits us to do that. First create and name all of the plots you wish to show in the same window. Then use the function `grid.arrange()` and specificy which plots you want to include and how many columns you want to organize them in.
+
+Below is an example using the `heights` data set. We define `p` to be a histogram of male heights and `p1`, `p2`, and `p3` to be the same histogram but with different binwidths i.e. different widths for the rectangles that make up the histogram.
+
+```{r}
+p <- heights %>% filter(sex == "Male") %>% 
+                 ggplot(aes(x = height)) 
+
+p1 <- p + geom_histogram(binwidth = 1, fill = "blue", col="black")
+p2 <- p + geom_histogram(binwidth = 2, fill = "blue", col="black")
+p3 <- p + geom_histogram(binwidth = 3, fill = "blue", col="black")
+```
+
+To print them all side-by-side, we can use the function `grid.arrange` in the `gridExtra` package:
+
+```{r, warning=FALSE, message=FALSE}
+library(gridExtra)
+grid.arrange(p1,p2,p3, ncol = 3)
+```
+
+Here, `ncol` specifies how many columns I want to arrange my plot in.
+
+
+4. Using the `gapminder` dataset, filter the data frame so only data from the year 2015 is kept. 
+
+
+```{r}
+#Your code here.
+```
+
+
+5. Create a histogram of `fertility`, and a second histogram of `life expectancy`. Then use `grid.arrange()` to plot the histograms on top of each other in the same window.
+
+```{r, message=FALSE, warning=FALSE}
+#Your code here.
+```
+
+
+## Vaccines
+
+For homework #2 you'll be working with the `us_contagious_diseases` dataset in the `dslabs` package. The data were collected, organized and distributed by the [Tycho Project](https://www.tycho.pitt.edu/). They include weekly reported counts data for seven diseases from 1928 to 2011, from all fifty states. We include the yearly totals in the `dslabs` package:
+
+```{r}
+library(dslabs)
+data("us_contagious_diseases")
+```
+
+6. Use the `us_contagious_disease` dataset and `dplyr` tools to create an object called `dat` that stores only the Smallpox data, includes a per 10,000 people rate, and removes Alaska and Hawaii since they only became states in the late 1950s. Include years in which cases were reported in 10 or more weeks.
+
+```{r}
+#Your code here.
+```
+
+
+7. Calculate the US average number of cases of Smallpox per 10,000 people for each year. Do not include years in which cases were not reported.
+
+
+```{r}
+#Your code here.
+```
+
+
+8. Make a the time series plot of the number of cases of Smallpox per 10,000 people for all states and add a line for the US average.
+
+```{r}
+#Your code here.
+```
+
+9. For the state of California, make a time series plot showing rates for all diseases. Include only years with 10 or more weeks reporting. Use a different color for each disease.
+
+    
+```{r}
+#Your code here.
+```
