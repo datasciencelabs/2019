@@ -24,7 +24,7 @@ ds_theme_set()
 ## Encoding data using visual cues
 We start by describing some principles for encoding data. There are several approaches at our disposal including *position*, *aligned lengths*, *angles*, *area*, *brightness*, and *color hue*. 
 
-To illustrate how some of these strategies compare let's suppose we want to report the results from two hypothetical polls regarding browser preference taken in 2000 and then 2015. Here, for each year, we are simply comparing four quantities, four percentages.
+To illustrate how some of these strategies compare let's suppose we want to report the results from two hypothetical polls regarding browser preference taken in 2000 and then 2015. Here, for each year, we are simply comparing five quantities, five percentages.
 
 A widely used graphical representation of percentages, popularized by Microsoft Excel, is the pie chart:
 
@@ -452,7 +452,7 @@ Comparison is easier when color is used to denote the two things compared.
 
 ### Think of the color blind
 
-About 10% of the population is color blind. Unfortunately, the default colors used in ggplot are not optimal for this group. However, ggplot does it make it easy to change the color palette used in the plots. Here is an example of how we can use a [color blind friendly pallet] (http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/#a-colorblind-friendly-palette). There are several resources that help you select colors, for example [this one](http://bconnelly.net/2013/10/creating-colorblind-friendly-figures/). 
+About 10% of the population is color blind. Unfortunately, the default colors used in ggplot are not optimal for this group. However, ggplot does make it easy to change the color palette used in the plots. Here is an example of how we can use a [color blind friendly pallet] (http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/#a-colorblind-friendly-palette). There are several resources that help you select colors, for example [this one](http://bconnelly.net/2013/10/creating-colorblind-friendly-figures/). 
 
 
 ```{r, fig.height=3.5}
@@ -628,8 +628,8 @@ We create a temporary object `dat` that stores only the Measles data, includes a
 ```{r}
 the_disease <- "Measles"
 dat <- us_contagious_diseases %>%
-       filter(!state%in%c("Hawaii","Alaska") & disease == the_disease) %>%
-       mutate(rate = count / population * 10000 * 52/ weeks_reporting) %>% 
+       filter(!state %in% c("Hawaii","Alaska") & disease == the_disease) %>%
+       mutate(rate = (count / weeks_reporting) * 52 / (population / 100000)) %>% 
        mutate(state = reorder(state, rate)) 
 ```
 
@@ -640,7 +640,7 @@ When choosing colors to quantify a numeric variable we chose between two options
 
 ```{r}
 library(RColorBrewer)
-display.brewer.all(type="seq")
+display.brewer.all(type = "seq")
 ```
 
 Diverging colors are used to represent values that diverge from a center. We put equal emphasis on both ends of the data range: higher than the center and lower than the center. An example of when we would use a divergent pattern would be if we were to show height in standard deviations away from the average. Here are some examples of divergent patterns: 
@@ -657,27 +657,27 @@ We use the geometry `geom_tile` to tile the region with colors representing dise
 
 ```{r,eval=FALSE}
 dat %>% ggplot(aes(year, state,  fill = rate)) +
-  geom_tile(color = "grey50") +
-  scale_x_continuous(expand=c(0,0)) +
-  scale_fill_gradientn(colors = brewer.pal(9, "Reds"), trans = "sqrt") +
-  geom_vline(xintercept=1963, col = "blue") +
-  theme_minimal() +  theme(panel.grid = element_blank()) +
-  ggtitle(the_disease) + 
-  ylab("") + 
-  xlab("")
+        geom_tile(color = "grey50") +
+        scale_x_continuous(expand = c(0,0)) +
+        scale_fill_gradientn(colors = brewer.pal(9, "Reds"), trans = "sqrt") +
+        geom_vline(xintercept = 1963, col = "blue") +
+        theme_minimal() +  theme(panel.grid = element_blank()) +
+        ggtitle(the_disease) + 
+        ylab("") + 
+        xlab("")
 ```
 
 
 ```{r,echo=FALSE}
 dat %>% ggplot(aes(year, state,  fill = rate)) +
-  geom_tile(color = "grey50") +
-  scale_x_continuous(expand=c(0,0)) +
-  scale_fill_gradientn(colors = brewer.pal(9, "Reds"), trans = "sqrt") +
-  geom_vline(xintercept=1963, col = "blue") +
-  theme_minimal() +  theme(panel.grid = element_blank()) +
-  ggtitle(the_disease) + 
-  ylab("") + 
-  xlab("")
+        geom_tile(color = "grey50") +
+        scale_x_continuous(expand = c(0,0)) +
+        scale_fill_gradientn(colors = brewer.pal(9, "Reds"), trans = "sqrt") +
+        geom_vline(xintercept = 1963, col = "blue") +
+        theme_minimal() +  theme(panel.grid = element_blank()) +
+        ggtitle(the_disease) + 
+        ylab("") + 
+        xlab("")
 ```
 
 This plot makes a very striking argument for the contribution of vaccines. However, one limitation of this plot is that it uses color to represent quantity which we earlier explained makes it a bit harder to know exactly how high it is going. Position and length are better cues. If we are willing to lose state information, we can make a version of the plot that shows the values with position.
