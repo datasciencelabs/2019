@@ -639,7 +639,7 @@ As a final point, we note that these distributions weigh every country the same.
 gapminder %>% 
     filter(year %in% c(past_year, present_year) & country %in% country_list) %>%
   group_by(year) %>%
-  mutate(weight = population/sum(population)*2) %>%
+  mutate(weight = population/sum(population)) %>%
   ungroup() %>%
   ggplot(aes(dollars_per_day, fill = group, weight = weight)) +
   scale_x_continuous(trans = "log2") + 
@@ -684,7 +684,7 @@ This shows a dramatic difference. While in the west less than 0.5% children die,
 
 ```{r}
 surv_income %>% ggplot(aes(income, infant_survival_rate, label = group, color = group)) +
-  scale_x_continuous(trans = "log2", limits = c(0.25, 150)) +
+  scale_x_continuous(trans = "log2", limit = c(0.25, 150)) +
   scale_y_continuous(trans = "logit", limit = c(0.875, .9981), 
                      breaks = c(.85,.90,.95,.99,.995,.998)) +
   geom_label(size = 3, show.legend = FALSE)
@@ -715,7 +715,7 @@ highlight <- c("Sierra Leone", "Mauritius",  "Sudan", "Botswana", "Tunisia",
                "United States","Sweden", "Angola", "Serbia")
 
 gapminder %>% filter(year %in% present_year & !is.na(gdp) & !is.na(infant_mortality) & !is.na(group) ) %>%
-  ggplot(aes(dollars_per_day, 1 - infant_mortality/1000, col = group, label = country)) +
+  ggplot(aes(dollars_per_day, 1 - infant_mortality/1000, color = group, label = country)) +
   scale_x_continuous(trans = "log2", limits=c(0.25, 150)) +
   scale_y_continuous(trans = "logit",limit=c(0.875, .9981),
                      breaks=c(.85,.90,.95,.99,.995,.998)) + 
