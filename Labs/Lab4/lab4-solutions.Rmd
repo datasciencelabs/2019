@@ -1,0 +1,311 @@
+---
+title: 'Lab 4: More Visualization with ggplot2'
+output: html_document
+---
+
+```{r libraries}
+library(dslabs)
+library(dplyr)
+library(ggplot2)
+```
+
+In this lab, we will be working more with the vaccination data and we
+will be practicing using ggplot2. The examples here attempt to show how
+a data scientist would approach a new dataset, and are intended to
+illustrate how `ggplot2` can be flexibly manipulated to create a variety
+of visualizations.
+
+# Problem 1: Weeks reporting
+
+In this problem, we will explore the `weeks_reporting` column in the
+vaccines data and its impact on the rate calculation.
+
+```{r load_diseases}
+data(us_contagious_diseases)
+```
+a. Look at the help documentation for `us_contagious_diseases` and
+describe what `weeks_reporting` represents.
+
+*Solution*: The `weeks_reporting` column counts the number of weeks
+counts were reported that year.
+
+b. Draw a histogram of the `weeks_reporting` column for all states, all
+years, and all diseases combined.
+
+```{r hist_weeks}
+us_contagious_diseases %>%
+  ggplot(aes(x = weeks_reporting)) +
+  geom_histogram(bins = 20) +
+  xlab("Weeks Reporting") +
+  ggtitle("Histogram of Weeks Reporting")
+```
+
+c. The histogram above aggregates the `weeks_reporting` for all states,
+all years, and all diseases combined. It could be possible that there
+are some diseases where the number of weeks reporting could be close to
+52, and some diseases where the number of weeks reporting could be much
+less. Does the number of weeks reporting vary by disease? Use the
+`facet_wrap` function to explore this.
+
+
+```{r hist_disease}
+us_contagious_diseases %>%
+  ggplot(aes(x = weeks_reporting, y = ..density..)) +
+  geom_histogram(bins = 20) +
+  facet_wrap(~disease) +
+  xlab("Weeks Reporting") +
+  ggtitle("Histogram of Weeks Reporting")
+```
+
+d. Because the histogram above aggregates data on all states, it's
+possible there are differences in weeks reporting by states as well. To
+answer this question, we can draw a boxplot by plotting the weeks
+reporting by state, and facetting by disease.
+
+```{r boxplot, fig.width = 8, fig.height = 8}
+us_contagious_diseases %>%
+  ggplot(aes(x = state, y = weeks_reporting, group = state)) +
+  geom_boxplot() +
+  facet_wrap(~disease) +
+  xlab("Year") + ylab("Weeks Reporting") +
+  coord_flip() +
+  ggtitle("Weeks Reporting for each Year")
+```
+
+e. If the above plot is hard to read, we might want to focus on one
+disease in particular. How can we revise the code in part (d) to only
+plot Pertussis?
+
+```{r boxplot_pertussis}
+us_contagious_diseases %>%
+  filter(disease == "Pertussis") %>%
+  ggplot(aes(x = reorder(state, weeks_reporting, median),
+             y = weeks_reporting, group = state)) +
+  geom_boxplot() +
+  xlab("Year") + ylab("Weeks Reporting") +
+  coord_flip() +
+  ggtitle("Weeks Reporting for each Year")
+```
+
+# Problem 2: Improved Rate Calculation
+
+Recall that last time we calculated the rate for each disease in each
+state in each year as the count divided by the population. Now that
+we've identified that we need to take into account differential weeks
+reporting in calculating the rate, let us amend the rate calculation.
+
+a. Subset the data to exclude Alaska and Hawaii and include states-years
+with weeks reporting greater than 0.
+
+```{r filter}
+disease_subset <- us_contagious_diseases %>%
+  filter(state != "Alaska", state != "Hawaii",
+         weeks_reporting > 0)
+```
+b. Calculate the rate per 100,000, not taking into account weeks
+reporting. Call this the unadjusted rate.
+
+```{r raw_rate}
+disease_subset <- disease_subset %>%
+  mutate(raw_rate = count / population * 100000)
+```
+
+b. Now, take into account weeks reporting for vaccination data to
+calculate the rate. Call this the adjusted rate.
+
+```{r adjust_rate}
+disease_subset <- disease_subset %>%
+  mutate(rate = 52 * (count / weeks_reporting) / population * 1e5)
+```
+
+c. Compare the adjusted vs. unadjusted rate to see if there is a
+difference. Make a scatter plot with one quantity on the x-axis and one
+quantity on the y-axis. Color each point by the number of weeks
+reporting. Include the identity line so we can more easily make
+comparisons.
+
+In statistics, we often want to compare two quantities to see how
+they're related. Do we see a relationship here? Looking back at the
+derivation of the new rate, is it clear why the new rate is greater than
+or equal to the previously calculated rate? Is there a relationship
+between the difference and the number of weeks reporting?
+
+```{r compare}
+disease_subset %>%
+  ggplot(aes(x = raw_rate, y = rate, color = weeks_reporting)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  geom_abline(slope = 1, intercept = 1) +
+  xlab("Unadjusted Rate") + ylab("Adjusted Rate") +
+  ggtitle("Comparison between two rates")
+```
+
+*Solution*:
+
+The adjusted rate is calculated as
+
+\[
+  r_{\text{adj}} = \frac{52}{\text{weeks
+  reporting}}\frac{\text{count}}{\text{population} / 100000}
+\]
+
+The unadjusted rate is calculated as
+
+\[
+  r_{\text{unadj}} = \frac{\text{count}}{\text{population} / 100000}
+\]
+
+So we can see that $r_{\text{adj}} = \frac{52}{\text{weeks reporting}}
+r_{\text{unadj}}$. Since $\text{weeks reporting} \leq 52$, we can see
+that $r_{\text{adj}} \geq r_{\text{adj}}$, with equality when weeks
+reporting is 52. This is also a decreasing function in terms of weeks
+reporting, so the difference between $r_{\text{adj}}$ and
+$r_{\text{unadj}}$ decreases as weeks reporting increases to 52.
+
+# Problem 3
+
+Now, we can apply the same principle to calculate the overall rate for
+each disease for the entire US.
+
+a. For each disease and year, compute the overall rate for the entire
+US. Hint: You may want to use the `group_by` function.
+
+```{r us_rate}
+us_avg <- disease_subset %>%
+  group_by(disease, year) %>%
+  summarize(us_rate = sum(count / weeks_reporting * 52) / sum(population) * 1e5)
+head(us_avg)
+```
+
+b. Draw a plot of the correctly calculated overall rate for the entire
+US for each disease.
+
+```{r us_plot}
+us_avg %>%
+  ggplot(aes(x = year, y = us_rate, color = disease)) +
+  geom_line() +
+  xlab("Year") + ylab("Rate per 100,000") +
+  ggtitle("US rate for various infectious diseases")
+```
+
+# Problem 4
+
+In this problem, we will explore some other types of visualization and
+data manipulation using the gapminder data.
+
+a. Create a new dataframe called `gapminder_africa` which only includes
+countries from the gapminder dataset that are in the continent of
+Africa.
+
+```{r gapminder_africa}
+data(gapminder)
+gapminder_africa <- filter(gapminder, continent == "Africa")
+```
+
+b. We will explore the changes in population for each country over time.
+First, create a line graph for each country's population over time.
+
+```{r gapminder_pop}
+gapminder_africa %>%
+  ggplot(aes(x = year, y = population, color = country)) +
+  geom_line() +
+  xlab("Year") + ylab("Population") +
+  ggtitle("Population of African countries over time")
+```
+
+c. We can see that the distribution of populations is highly
+skewed. There are a bunch of countries with lower populations
+that are all bunched up. We can fix this by performing a log10
+transformation of the y-axis.
+
+```{r gapminder_log10}
+gapminder_africa %>%
+  ggplot(aes(x = year, y = population, color = country)) +
+  geom_line() +
+  scale_y_log10() +
+  xlab("Year") + ylab("Population") +
+  ggtitle("Population of African countries over time")
+
+```
+
+d. In the line graph in part (c), it is hard to see individual
+countries. Instead, we can make a tile plot of the population. Check out
+the `geom_tile` command and produce a tile plot of each country's
+population over time. We can color each tile using the `fill` aesthetic.
+
+```{r gapminder_tile}
+gapminder_africa %>%
+  ggplot(aes(x = year, y = country, fill = population)) +
+  geom_tile() +
+  xlab("Year") + ylab("Country") +
+  ggtitle("Population of African countries over time")
+```
+
+e. `ggplot2`'s default color scheme looks a little ugly. We can change
+that! There is a built-in colorscheme called viridis that we can try.
+Look up `scale_fill_viridis_c` in the help. We can use `viridis_c` for
+continuous data and `viridis_d` for discrete data. Here, because we are
+using `fill` to color each tile, we need to use `scale_fill_viridis_c`.
+Note, we can also use the approach from lecture to color this plot.
+
+```{r gapminder_tile_color}
+gapminder_africa %>%
+  ggplot(aes(x = year, y = country, fill = population)) +
+  geom_tile() +
+  xlab("Year") + ylab("Country") +
+  ggtitle("Population of African countries over time") +
+  scale_fill_viridis_c(name = "Population")
+
+```
+
+Also note that we can use the `name` parameter in the `scale_` functions
+to set the title of the legend.
+
+f. The previous plot was hard to read because the countries were in
+alphabetical order. Instead, maybe we can order the countries by the
+maximum population (i.e. the population they reached in the most recent
+year available in gapminder).
+
+First, use `group_by` and `summarize` to calculate the maximum
+population (over years) for each country.
+
+```{r gapminder_summary}
+gapminder_africa %>%
+  group_by(country) %>%
+  summarize(max_pop = max(population))
+
+gapminder_africa %>%
+  group_by(country) %>%
+  summarize(max_pop = max(population, na.rm = TRUE))
+```
+
+Note, because of missing data, we need to use `max` with `na.rm = TRUE`
+to remove the NAs.
+
+g. Now, using the `reorder` function, create a new column
+`country_reorder` in the `gapminder_africa` data that reorders the
+countries by their maximum population over all the years in the
+gapminder data.
+
+```{r gapminder_order}
+gapminder_africa <- gapminder_africa %>%
+  mutate(country_reorder = reorder(country, population, max,
+                                   na.rm = TRUE))
+```
+
+h. Finally, use the `country_reorder` variable to make a revised version
+of the plot in part (e).
+
+Also, note that `ggplot2` `scale` functions also take a `trans`
+argument, so you can apply a transformation to the scale. Apply a log10
+transformation to the fill.
+
+```{r gampinder_tile_reorder}
+gapminder_africa %>%
+  ggplot(aes(x = year, y = country_reorder, fill = population)) +
+  geom_tile(color = "grey50") +
+  scale_fill_viridis_c(name = "Population", trans = "log10") +
+  xlab("Year") + ylab("Country") +
+  ggtitle("Population of African countries over time")
+
+```

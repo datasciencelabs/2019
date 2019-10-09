@@ -1,0 +1,216 @@
+---
+title: 'Lab 4: More Visualization with ggplot2'
+output: html_document
+---
+
+```{r libraries}
+library(dslabs)
+library(dplyr)
+library(ggplot2)
+```
+
+In this lab, we will be working more with the vaccination data and we
+will be practicing using ggplot2. The examples here attempt to show how
+a data scientist would approach a new dataset, and are intended to
+illustrate how `ggplot2` can be flexibly manipulated to create a variety
+of visualizations.
+
+# Problem 1: Weeks reporting
+
+In this problem, we will explore the `weeks_reporting` column in the
+vaccines data and its impact on the rate calculation.
+
+```{r load_diseases}
+data(us_contagious_diseases)
+```
+a. Look at the help documentation for `us_contagious_diseases` and
+describe what `weeks_reporting` represents.
+
+*Solution*: The `weeks_reporting` column counts the number of weeks
+counts were reported that year.
+
+b. Draw a histogram of the `weeks_reporting` column for all states, all
+years, and all diseases combined.
+
+```{r hist_weeks}
+# your code here
+```
+
+c. The histogram above aggregates the `weeks_reporting` for all states,
+all years, and all diseases combined. It could be possible that there
+are some diseases where the number of weeks reporting could be close to
+52, and some diseases where the number of weeks reporting could be much
+less. Does the number of weeks reporting vary by disease? Use the
+`facet_wrap` function to explore this.
+
+
+```{r hist_disease}
+# your code here
+```
+
+d. Because the histogram above aggregates data on all states, it's
+possible there are differences in weeks reporting by states as well. To
+answer this question, we can draw a boxplot by plotting the weeks
+reporting by state, and facetting by disease.
+
+```{r boxplot, fig.width = 8, fig.height = 8}
+# your code here
+```
+
+e. If the above plot is hard to read, we might want to focus on one
+disease in particular. How can we revise the code in part (d) to only
+plot Pertussis?
+
+```{r boxplot_pertussis}
+# your code here
+```
+
+# Problem 2: Improved Rate Calculation
+
+Recall that last time we calculated the rate for each disease in each
+state in each year as the count divided by the population. Now that
+we've identified that we need to take into account differential weeks
+reporting in calculating the rate, let us amend the rate calculation.
+
+a. Subset the data to exclude Alaska and Hawaii and include states-years
+with weeks reporting greater than 0.
+
+```{r filter}
+# your code here
+```
+b. Calculate the rate per 100,000, not taking into account weeks
+reporting. Call this the unadjusted rate.
+
+```{r raw_rate}
+# your code here
+```
+
+b. Now, take into account weeks reporting for vaccination data to
+calculate the rate. Call this the adjusted rate.
+
+```{r adjust_rate}
+# your code here
+```
+
+c. Compare the adjusted vs. unadjusted rate to see if there is a
+difference. Make a scatter plot with one quantity on the x-axis and one
+quantity on the y-axis. Color each point by the number of weeks
+reporting. Include the identity line so we can more easily make
+comparisons.
+
+In statistics, we often want to compare two quantities to see how
+they're related. Do we see a relationship here? Looking back at the
+derivation of the new rate, is it clear why the new rate is greater than
+or equal to the previously calculated rate? Is there a relationship
+between the difference and the number of weeks reporting?
+
+```{r compare}
+# your code here
+```
+
+# Problem 3
+
+Now, we can apply the same principle to calculate the overall rate for
+each disease for the entire US.
+
+a. For each disease and year, compute the overall rate for the entire
+US. Hint: You may want to use the `group_by` function.
+
+```{r us_rate}
+# your code here
+```
+
+b. Draw a plot of the correctly calculated overall rate for the entire
+US for each disease.
+
+```{r us_plot}
+# your code here
+```
+
+# Problem 4
+
+In this problem, we will explore some other types of visualization and
+data manipulation using the gapminder data.
+
+a. Create a new dataframe called `gapminder_africa` which only includes
+countries from the gapminder dataset that are in the continent of
+Africa.
+
+```{r gapminder_africa}
+data(gapminder)
+# your code here
+```
+
+b. We will explore the changes in population for each country over time.
+First, create a line graph for each country's population over time.
+
+```{r gapminder_pop}
+# your code here
+```
+
+c. We can see that the distribution of populations is highly
+skewed. There are a bunch of countries with lower populations
+that are all bunched up. We can fix this by performing a log10
+transformation of the y-axis.
+
+```{r gapminder_log10}
+# your code here
+```
+
+d. In the line graph in part (c), it is hard to see individual
+countries. Instead, we can make a tile plot of the population. Check out
+the `geom_tile` command and produce a tile plot of each country's
+population over time. We can color each tile using the `fill` aesthetic.
+
+```{r gapminder_tile}
+# your code here
+```
+
+e. `ggplot2`'s default color scheme looks a little ugly. We can change
+that! There is a built-in colorscheme called viridis that we can try.
+Look up `scale_fill_viridis_c` in the help. We can use `viridis_c` for
+continuous data and `viridis_d` for discrete data. Here, because we are
+using `fill` to color each tile, we need to use `scale_fill_viridis_c`.
+Note, we can also use the approach from lecture to color this plot.
+
+```{r gapminder_tile_color}
+# your code here
+```
+
+Also note that we can use the `name` parameter in the `scale_` functions
+to set the title of the legend.
+
+f. The previous plot was hard to read because the countries were in
+alphabetical order. Instead, maybe we can order the countries by the
+maximum population (i.e. the population they reached in the most recent
+year available in gapminder).
+
+First, use `group_by` and `summarize` to calculate the maximum
+population (over years) for each country.
+
+```{r gapminder_summary}
+# your code here
+```
+
+Note, because of missing data, we need to use `max` with `na.rm = TRUE`
+to remove the NAs.
+
+g. Now, using the `reorder` function, create a new column
+`country_reorder` in the `gapminder_africa` data that reorders the
+countries by their maximum population over all the years in the
+gapminder data.
+
+```{r gapminder_order}
+# your code here
+```
+
+h. Finally, use the `country_reorder` variable to make a revised version
+of the plot in part (e).
+
+Also, note that `ggplot2` `scale` functions also take a `trans`
+argument, so you can apply a transformation to the scale. Apply a log10
+transformation to the fill.
+
+```{r gampinder_tile_reorder}
+# your code here
+```
