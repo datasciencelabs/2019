@@ -1,0 +1,376 @@
+---
+title: 'Lab 5: Shiny'
+output: html_document
+---
+
+This lab will guide through building a Shiny app using the `murders` dataset from the `dslabs` package.
+
+## Step 1
+
+Create a basic Shiny app that includes a `selectInput` input widget that allows the user to choose one of the 4 regions (Northeast, North Central, West, or South) and outputs a scatterplot with `total` murder on the y-axis and `population` on the x-axis. Don't forget to load the `shiny`, `dslabs`, `dplyr` and `ggplot2` libraries as well as the `murders` dataset.
+
+* Solution: 
+
+```{r, eval=FALSE}
+library(shiny)
+library(dslabs)
+library(dplyr)
+library(ggplot2)
+data("murders")
+
+# Define ui
+ui <- fluidPage( # Dropdown menu that allows the user to choose a region
+                 selectInput(inputId = "region", label = "Select a region",
+                             choices = as.list(levels(murders$region))),
+                 plotOutput("scatterPlot")
+)
+
+# Define server
+server <- function(input, output){
+                   output$scatterPlot <- renderPlot({
+                   		murders %>% filter(region == input$region) %>%
+                   								ggplot(aes(x = population, y = total)) +
+                  							  geom_point() +
+                   								xlab("Total number of murders") +
+                   								ylab("Population")
+    })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+
+## Step 2
+Points in the lower left of the plot are bunched up for most of the regions. To make it easier to view these points, transform the y-axis using the `log10` transform.
+
+* Solution: 
+
+Only the `server` function is changed. Advanced: `limits` and `breaks` were used to keep the axis the same for each region's plot.
+
+```{r, eval=FALSE}
+server <- function(input, output){
+    output$scatterPlot <- renderPlot({
+        murders %>% filter(region == input$region) %>%
+            ggplot(aes(x = population/10^6, y = total)) +
+            geom_point() +
+            scale_x_log10(limits = c(1, 30), breaks = c(1, 3, 10, 30)) +
+            scale_y_log10(limits = c(1, 1000), breaks = c(10, 100, 300, 500, 1000)) +
+            xlab("Population in Millions(log scale)") +
+            ylab("Total Number of Murders (log scale)")
+    })
+}
+```
+
+## Step 3
+
+We have a working app but we haven't tried out different layouts. Using the `siderbarLayout`, `sidebarPanel` and `mainPanel` functions to have the input appear on the left and the scatter plot on the right. Include a title for your app using the `titlePanel` function.
+
+* Solution:
+
+Only the `ui` function changed.
+
+```{r, eval=FALSE}
+ui <- fluidPage( 
+    titlePanel("Data Exploration with Murder Data"),
+    
+    sidebarLayout(
+        sidebarPanel(
+                # Dropdown menu that allows the user to choose a region
+                selectInput(inputId = "region", label = "Select a region",
+                            choices = as.list(levels(murders$region)))
+                ),
+        
+        mainPanel(
+                plotOutput("scatterPlot")
+                )
+    )
+)
+```
+
+
+## Step 4
+Now include an input that allows the user to decide what color they would like the points to be. Include the following colors: `black`, `blue`, `red` and `green`.
+
+* Solution:
+
+Both the `ui` and `server` functions change.
+
+```{r, eval=FALSE}
+ui <- fluidPage( 
+    titlePanel("Data Exploration with Murder Data"),
+    
+    sidebarLayout(
+        sidebarPanel(
+            # Dropdown menu that allows the user to choose a region
+            selectInput(inputId = "region", label = "Select a region",
+                        choices = as.list(levels(murders$region))),
+            
+            selectInput(inputId = "color", label = "Choose a color",
+                        choices = c("black", "blue", "red", "green")
+                        )
+            ),
+        
+        mainPanel(
+            plotOutput("scatterPlot")
+        )
+    )
+)
+
+# Define server
+server <- function(input, output){
+    output$scatterPlot <- renderPlot({
+        murders %>% filter(region == input$region) %>%
+            ggplot(aes(x = population/10^6, y = total)) +
+            geom_point(color = input$color) +
+            scale_x_log10(limits = c(1, 30), breaks = c(1, 3, 10, 30)) +
+            scale_y_log10(limits = c(1, 1000), breaks = c(10, 100, 300, 500, 1000)) +
+            xlab("Population in Millions(log scale)") +
+            ylab("Total Number of Murders (log scale)")
+    })
+}
+```
+
+## Step 5
+I want to give the user the option to view the scatter plot we already have or a boxplot of total number of murders for each region. Add an input that would allow this.
+
+* Solution:
+
+Both the `ui` and `server` function change.
+```{r, eval=FALSE}
+ui <- fluidPage( 
+    titlePanel("Data Exploration with Murder Data"),
+    
+    sidebarLayout(
+        sidebarPanel(
+            # Dropdown menu that allows the user to choose a region
+            selectInput(inputId = "region", label = "Select a region",
+                        choices = as.list(levels(murders$region))),
+            
+            # Dropdown menu that allows user to choose a color
+            selectInput(inputId = "color", label = "Choose a color",
+                        choices = c("black", "blue", "red", "green")
+            ),
+            
+            # Radio buttons for the user to choose a scatter plot or boxplot
+            radioButtons(inputId = "type", label = "What kind of plot?",
+                         choices = c("Scatter plot", "Boxplot"))
+        ),
+        
+        mainPanel(
+            # I changed the name of the output since it can be 2 different things
+            plotOutput("Plot") 
+        )
+    )
+)
+
+# Define server
+server <- function(input, output){
+        output$Plot <- renderPlot({
+            if (input$type == "Scatter plot"){
+                murders %>% filter(region == input$region) %>%
+                    ggplot(aes(x = population/10^6, y = total)) +
+                    geom_point(color = input$color) +
+                    scale_x_log10(limits = c(1, 30), breaks = c(1, 3, 10, 30)) +
+                    scale_y_log10(limits = c(1, 1000), breaks = c(10, 100, 300, 500, 1000)) +
+                    xlab("Population in Millions(log scale)") +
+                    ylab("Total Number of Murders (log scale)")
+            } else{
+                murders %>% filter(region == input$region) %>%
+                    ggplot(aes(x = region, y = total)) +
+                    geom_boxplot(color = input$color) +
+                    xlab("") +
+                    ylab("Number of murders")
+            }
+        })
+    
+}
+```
+
+
+## Step 6
+Suppose I also want to know the mean number of murders for a particular region. Add an output that shows the mean number of murders for a chosen region using the `verbatimTextOutput()` function in the `ui` function. Use the `renderText({ })` function in the `server` function to have the mean ouput in the app.
+
+* Solution:
+
+Both the `ui` and `server` function change.
+```{r, eval=FALSE}
+ui <- fluidPage( 
+    titlePanel("Data Exploration with Murder Data"),
+    
+    sidebarLayout(
+        sidebarPanel(
+            # Dropdown menu that allows the user to choose a region
+            selectInput(inputId = "region", label = "Select a region",
+                        choices = as.list(levels(murders$region))),
+            
+            # Dropdown menu that allows user to choose a color
+            selectInput(inputId = "color", label = "Choose a color",
+                        choices = c("black", "blue", "red", "green")),
+            
+            # Radio buttons for the user to choose a scatter plot or boxplot
+            radioButtons(inputId = "type", label = "What kind of plot?",
+                         choices = c("Scatter plot", "Boxplot"))
+            ),
+        
+        mainPanel(
+            # I changed the name of the output since it can be 2 different things
+            plotOutput("Plot"),
+            verbatimTextOutput("mean")
+        )
+    )
+)
+
+# Define server
+server <- function(input, output){
+    output$Plot <- renderPlot({
+        if (input$type == "Scatter plot"){
+            murders %>% filter(region == input$region) %>%
+                ggplot(aes(x = population/10^6, y = total)) +
+                geom_point(color = input$color) +
+                scale_x_log10(limits = c(1, 30), breaks = c(1, 3, 10, 30)) +
+                scale_y_log10(limits = c(1, 1000), breaks = c(10, 100, 300, 500, 1000)) +
+                xlab("Population in Millions(log scale)") +
+                ylab("Total Number of Murders (log scale)")
+        } else{
+            murders %>% filter(region == input$region) %>%
+                ggplot(aes(x = region, y = total)) +
+                geom_boxplot(color = input$color) +
+                xlab("") +
+                ylab("Number of murders")
+        }
+    })
+    
+    output$mean <- renderText({
+        avg <- murders %>% filter(region == input$region) %>%
+                summarize(avg = mean(total)) %>% .$avg
+            
+        paste0("Mean number of murders in the ", input$region, " region: ", avg)
+    })
+    
+}
+```
+
+
+## Step 7
+We use the same subset of the `murders` data set in 3 different outputs in our app and redefine the subset each time the input changes. This is inefficient and takes up more lines of code. Make the subset of the `murders` data frame a reactive expression. Then use that expression in each of the 3 outputs.
+
+* Solution:
+
+Only the `server` function changed.
+
+```{r, eval=FALSE}
+server <- function(input, output){
+    dat <- reactive(murders %>% filter(region == input$region))
+    
+    output$Plot <- renderPlot({
+        if (input$type == "Scatter plot"){
+            dat() %>%
+                ggplot(aes(x = population/10^6, y = total)) +
+                geom_point(color = input$color) +
+                scale_x_log10(limits = c(1, 30), breaks = c(1, 3, 10, 30)) +
+                scale_y_log10(limits = c(1, 1000), breaks = c(10, 100, 300, 500, 1000)) +
+                xlab("Population in Millions(log scale)") +
+                ylab("Total Number of Murders (log scale)")
+        } else{
+            dat() %>%
+                ggplot(aes(x = region, y = total)) +
+                geom_boxplot(color = input$color) +
+                xlab("") +
+                ylab("Number of murders")
+        }
+    })
+    
+    output$mean <- renderText({
+        avg <- dat() %>%
+            summarize(avg = mean(total)) %>% .$avg
+        
+        paste0("Mean number of murders in the ", input$region, " region: ", avg)
+    })
+    
+}
+```
+
+
+
+## Step 8 (Optional)
+Add some text before the input widgets that gives some background/context to your app. Use the paragraph function `p()`. You may want to also use the `br()` function to add some space between the text and input widgets.
+
+* Solution:
+
+Only the `ui` function changes.
+
+```{r, eval=FALSE}
+ui <- fluidPage( 
+    titlePanel("Data Exploration with Murder Data"),
+    
+    sidebarLayout(
+        sidebarPanel(
+            p("The US is a large and diverse country with 50 very different states as well as the 
+              District of Columbia (DC). Here we use the", code("murders"), "dataset to gain some insight
+              into the variability in number of murders by region."),
+            
+            br(),
+            
+            # Dropdown menu that allows the user to choose a region
+            selectInput(inputId = "region", label = "Select a region",
+                        choices = as.list(levels(murders$region))),
+            
+            # Dropdown menu that allows user to choose a color
+            selectInput(inputId = "color", label = "Choose a color",
+                        choices = c("black", "blue", "red", "green")),
+            
+            # Radio buttons for the user to choose a scatter plot or boxplot
+            radioButtons(inputId = "type", label = "What kind of plot?",
+                         choices = c("Scatter plot", "Boxplot"))
+        ),
+        
+        mainPanel(
+            # I changed the name of the output since it can be 2 different things
+            plotOutput("Plot"),
+            verbatimTextOutput("mean")
+        )
+    )
+)
+```
+
+
+## Step 9 (Optional)
+Create the same app but with a different layout using the `multiRow` and `column` functions.
+
+* Solution:
+
+Here is one example. Only the `ui` function changes.
+
+```{r, eval=FALSE}
+ui <- fluidPage( 
+    titlePanel("Data Exploration with Murder Data"),
+    br(), # add some space 
+    # First row
+    fluidRow(
+        column(3,
+              p("The US is a large and diverse country with 50 very different states as well as the 
+              District of Columbia (DC). Here we use the", code("murders"), "dataset to gain some insight
+              into the variability in number of murders by region.")
+        ),
+        column(3, selectInput(inputId = "region", label = "Select a region",
+                              choices = as.list(levels(murders$region)))
+        ),
+        column(3, selectInput(inputId = "color", label = "Choose a color",
+                              choices = c("black", "blue", "red", "green"))
+        
+        ),
+        column(3, radioButtons(inputId = "type", label = "What kind of plot?",
+                               choices = c("Scatter plot", "Boxplot"))
+        )
+    ),
+    br(), # add some space 
+    # Second row
+    fluidRow(
+        column(6, plotOutput("Plot")),
+        column(6, verbatimTextOutput("mean"))
+    )
+)
+```
+
+

@@ -1,0 +1,44 @@
+---
+title: 'Lab 5: Shiny'
+output: html_document
+---
+
+This lab will guide through building a Shiny app using the `murders` dataset from the `dslabs` package.
+
+## Step 1
+
+Create a basic Shiny app that includes a `selectInput` input widget that allows the user to choose one of the 4 regions (Northeast, North Central, West, or South) and outputs a scatterplot with `total` murder on the y-axis and `population` on the x-axis. Don't forget to load the `shiny`, `dslabs`, `dplyr` and `ggplot2` libraries as well as the `murders` dataset.
+
+## Step 2
+
+Points in the lower left of the plot are bunched up for most of the regions. To make it easier to view these points, transform the y-axis using the `log10` transform.
+
+## Step 3
+
+We have a working app but we haven't tried out different layouts. Using the `siderbarLayout`, `sidebarPanel` and `mainPanel` functions to have the input appear on the left and the scatter plot on the right. Include a title for your app using the `titlePanel` function.
+
+## Step 4
+
+Now include an input that allows the user to decide what color they would like the points to be. Include the following colors: `black`, `blue`, `red` and `green`.
+
+## Step 5
+
+I want to give the user the option to view the scatter plot we already have or a boxplot of total number of murders for each region. Add an input that would allow this.
+
+## Step 6
+
+Suppose I also want to know the mean number of murders for a particular region. Add an output that shows the mean number of murders for a chosen region using the `verbatimTextOutput()` function in the `ui` function. Use the `renderText({ })` function in the `server` function to have the mean ouput in the app.
+
+## Step 7
+
+We use the same subset of the `murders` data set in 3 different outputs in our app and redefine the subset each time the input changes. This is inefficient and takes up more lines of code. Make the subset of the `murders` data frame a reactive expression. Then use that expression in each of the 3 outputs.
+
+## Step 8 (Optional)
+
+Add some text before the input widgets that gives some background/context to your app. Use the paragraph function `p()`. You may want to also use the `br()` function to add some space between the text and input widgets.
+
+## Step 9 (Optional)
+
+Create the same app but with a different layout using the `multiRow` and `column` functions.
+
+
