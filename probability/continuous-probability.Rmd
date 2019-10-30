@@ -23,7 +23,7 @@ F <- function(a){
 
 which, for any value `a`, gives the proportion of values in the list `x` that are smaller or equal to `a`. 
 
-Note that we have not yet introduced probability. Let's do this by asking, if I pick one of the male students at random, what is the chance that he is taller than 70.5 inches? Because every student has the same chance of being picked, the answer to this is equivalent to the proportion of students that are taller than 70.5 feet. Using the CDF we obtain an answer by typing:
+Note that we have not yet introduced probability. Let's do this by asking, if I pick one of the male students at random, what is the chance that he is taller than 70.5 inches? Because every student has the same chance of being picked, the answer to this is equivalent to the proportion of students that are taller than 70.5 inches. Using the CDF we obtain an answer by typing:
 
 ```{r}
 1 - F(70.5)
