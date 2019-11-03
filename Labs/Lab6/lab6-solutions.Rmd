@@ -29,8 +29,8 @@ for(n in ns) {
     winnings <- replicate(B, roulette(n))
     p <- data.frame(winnings = winnings) %>% 
         ggplot(aes(x = winnings)) + 
-        geom_histogram(binwidth = 10, boundary = 0, color = "black") 
-    ggtitle(n)  
+        geom_histogram(binwidth = 10, boundary = 0, color = "black") + 
+        ggtitle(n)  
     print(p) 
 }
 ```
