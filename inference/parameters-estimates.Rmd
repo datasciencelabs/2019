@@ -19,7 +19,7 @@ set.seed(1)
 library(tidyverse)
 library(dslabs)
 ds_theme_set()
-take_poll(25)
+take_poll(25) # 25 is number of beads to sample
 ```
 
 Think about how you would construct your interval based on the data shown above. 
