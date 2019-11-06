@@ -581,7 +581,7 @@ names(polls_us_election_2016)</code></pre>
   mutate(spread = rawpoll_clinton/100 - rawpoll_trump/100)</code></pre>
 <p>For illustrative purposes, we will assume that there are only two parties and call <span class="math inline">\(p\)</span> the proportion voting for Clinton and <span class="math inline">\(1-p\)</span> the proportion voting for Trump. We are interested in the spread <span class="math inline">\(2p-1\)</span>. Let’s call the spread <span class="math inline">\(d\)</span> (for difference).</p>
 <p>Note that we have 49 estimates of the spread.<br />
-The theory we learned tells us that these estimates are a random variable with a probability distribution that is approximately normal. The expected value is the election night spread <span class="math inline">\(d\)</span> and the standard error is <span class="math inline">\(1.96\sqrt{p (1 - p) / N}\)</span>. Assuming the urn model we described earlier is a good one, we can use this information to construct a confidence interval based on the aggregated data. The estimated spread is:</p>
+The theory we learned tells us that these estimates are a random variable with a probability distribution that is approximately normal. The expected value is the election night spread <span class="math inline">\(d\)</span> and the standard error is <span class="math inline">\(2\sqrt{p (1 - p) / N}\)</span>. Assuming the urn model we described earlier is a good one, we can use this information to construct a confidence interval based on the aggregated data. The estimated spread is:</p>
 <pre class="r"><code>d_hat &lt;- polls %&gt;% 
          summarize(d_hat = sum(spread * samplesize) / sum(samplesize)) %&gt;% 
          .$d_hat
