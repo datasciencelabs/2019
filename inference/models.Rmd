@@ -37,6 +37,8 @@ beads <- beads %>%
 ```
 
 Who won the competition?
+
+
 ```{r, echo=FALSE}
 p <- 0.529 * 100
 beads <- beads %>% select(-Timestamp) %>%
@@ -48,6 +50,8 @@ beads
 ```
 
 Are these 95% confidence intervals?
+
+
 ```{r, echo=FALSE}
 tmp <- data.frame(N = seq(pmax(min(beads$N),20), max(beads$N), len = 100)) %>% 
        mutate(sqrt_N = sqrt(N))
@@ -74,14 +78,37 @@ What would Nate Silver do?
 agg  <- beads %>% filter(N > 0) %>% 
                   summarize(avg = mean(estimate), se = sd(estimate)/sqrt(n()), N = sum(N))
 
+agg
+```
+
+```{r}
 nate <- data.frame(name = "Nate Silver", estimate = agg$avg, N = agg$N, 
                    interval_size = 2*1.96*agg$se, stringsAsFactors = FALSE) %>%
-        mutate(lower = estimate - interval_size/2, upper = estimate + interval_size/2, size = upper - lower,  
+         mutate(lower = estimate - interval_size/2, upper = estimate + interval_size/2, size = upper - lower,  
          hit = lower <= p & upper >= p, includes_zero = lower <= 50 & upper >= 50)
-beads %>% bind_rows(beads, nate)  %>%  
-          arrange(desc(hit), size) %>% 
-          View()
 ```
+
+```{r}
+beads <- beads %>% rbind(beads, nate)
+
+beads <- unique(beads) %>%  
+         arrange(desc(hit), size)
+
+beads
+```
+
+
+```{r, echo=FALSE}
+color = ifelse(beads$name == "Nate Silver", "orange", "#00B6EB")
+beads %>% mutate(name = factor(name, levels=rev(unique(name)))) %>%
+  ggplot(aes(x = name, y = estimate)) + 
+  geom_hline(yintercept = p) + 
+  geom_point(col = color)+
+  geom_errorbar(aes(ymin = lower, ymax = upper), col = color) + 
+  coord_flip() 
+```
+
+We can see that Nate Silver's interval included the true $p$, but that his interval is pretty wide and he didn't win the competition. Why did this happen? Mainly because there were estimates quite far from the true $p$ and intervals that were quite large.
 
 We can also demonstrate how Mr. Silver saw what Mr. Scarborough did not using a Monte Carlo simulation. We generate results for 12 polls taken the week before the election. We mimic sample sizes from actual polls and construct and report 95\% confidence intervals for each of the 12 polls:
 
@@ -137,6 +164,7 @@ participants. Basically we construct an estimate of the spread, let's call it $d
 d_hat <- polls %>% 
   summarize(avg = sum(estimate*sample_size) / sum(sample_size)) %>% 
   .$avg
+d_hat
 ```
 
 Once we have an estimate of $d$ we can construct an estimate for the proportion voting for Obama which we can then use to estimate the standard error. Once we do this we see that our margin of error is `r p_hat <- (1+d_hat)/2; moe <- 2*1.96*sqrt(p_hat*(1-p_hat)/sum(polls$sample_size)); moe`. 
@@ -203,12 +231,13 @@ For illustrative purposes, we will assume that there are only two parties and ca
 
 
 Note that we have `r nrow(polls)` estimates of the spread.  
-The theory we learned tells us that these estimates are a random variable with a probability distribution that is approximately normal. The expected value is the election night spread $d$ and the standard error is $2\sqrt{p (1 - p) / N}$. Assuming the urn model we described earlier is a good one, we can use this information to construct a confidence interval based on the aggregated data. The estimated spread is:
+The theory we learned tells us that these estimates are a random variable with a probability distribution that is approximately normal. The expected value is the election night spread $d$ and the standard error is $1.96\sqrt{p (1 - p) / N}$. Assuming the urn model we described earlier is a good one, we can use this information to construct a confidence interval based on the aggregated data. The estimated spread is:
 
 ```{r}
 d_hat <- polls %>% 
          summarize(d_hat = sum(spread * samplesize) / sum(samplesize)) %>% 
          .$d_hat
+d_hat
 ```
 
 and the standard error is:
@@ -282,7 +311,7 @@ one_poll_per_pollster %>%
 
 In the previous section we saw that using the urn model theory to combine these results might not be appropriate due to the pollster effect. Instead we will model this spread data directly.
 
-The new model **can also be thought as an urn model** although the connection is not as direct. Rather than 0s (republicans) and 1s (democrats) our urn now contains poll results from all possible pollsters. We _assume_ that the expected value of our urn is the actual spread $d=2p-1$. 
+The new model **can also be thought of as an urn model** although the connection is not as direct. Rather than 0s (republicans) and 1s (democrats) our urn now contains poll results from all possible pollsters. We _assume_ that the expected value of our urn is the actual spread $d=2p-1$. 
 
 When we model more complicated phenomena like outcomes from polls that include pollster bias, we have to make more assumptions that are sometimes challenging to deduce, so we motivate them with data. 
 
