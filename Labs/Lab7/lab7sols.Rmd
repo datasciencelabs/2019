@@ -1,0 +1,191 @@
+---
+title: 'Lab 7: Midterm 2 Review'
+output: html_document
+---
+
+Midterm 2 will cover all material presented in lecture through November 6th. The exam will be a mixture of conceptual and coding questions. We'll review a few of the topics here.
+
+### Question 1
+I am working with the `gapminder` dataset and I want to create a scatter plot with `population` on the y-axis and fertility on the x-axis. What would be the **best** transformation for the y-axis?
+
+* The `log2` transformation
+* The `log10` transformation
+* The `sqrt` transformation
+
+Solution: the `log10` transformation since some population sizes are quite large and a few powers of 10 will be shown on the axis after the transformation. It is also the most intuitive transformation compared to the others for most people.
+
+### Question 2
+
+Create the following vector:
+
+```{r}
+x <- c(15,15,18,19,20,21,21,21,22,22,23,24,24,24,25,25,26,26,27,29,30,31)
+```
+Define a random variable by taking a sample of size 10, with replacement, from `x` and computing the median. Which best approximates the standard error of M? Hint: Use the function replicate to run a Monte Carlo simulation as we have done in class. Set the number of iterations to 10,000.
+
+* 1.5
+* 0.15
+* 15
+* 5
+
+Solution: 1.5
+```{r}
+x <- c(15,15,18,19,20,21,21,21,22,22,23,24,24,24,25,25,26,26,27,29,30,31)
+
+sims <- function(x){
+  X <- sample(x, 10, replace = TRUE)
+  median(X)
+}
+
+B <- 10000
+results <- replicate(B, sims(x))
+sd(results)
+```
+
+### Question 3
+What is the minimum code needed to create a Shiny app?
+
+Solution: To create a (blank) Shiny app you need the following 4 lines of code:
+```{r, eval=FALSE}
+library(shiny)
+
+# Define UI
+ui <- fluidPage()
+
+# Define server
+server <- function(input, output) {}
+
+shinyApp(ui = ui, server = server)
+```
+
+### Question 4
+Decreasing the confidence level, while holding the sample size the same, will do what to the
+length of your confidence interval? For example, will a 95% confidence interval be wider, narrower or the same width as a 90% confidence interval?
+
+* Wider
+* Narrower
+* It will stay the same
+
+Solution: Decreasing the confidence level while holding the sample size the same will result in a **narrower** interval. Intuitively, by decreasing the confidence level we are less confident that our interval will cover the true estimate, say $p$, and that the interval spans a smaller range of numbers. 
+
+
+### Question 5
+Researchers are concerned about the impact of students working while they are enrolled in classes, and they’d like to know if students work too much and therefore are spending less time on their classes than they should be. First, the researchers need to find out, on
+average, how many hours a week students are working. They know from previous studies that
+the standard deviation of this variable is about 5 hours. A survey of 200 students provides a sample mean of 7.10 hours worked. What is a 95% confidence interval based on this sample?
+
+* (6.10, 8.10)
+* (6.41, 7.79)
+* (6.57, 7.63)
+* (7.10, 8.48)
+
+Solution: (6.41, 7.79)
+
+95% confidence interval formula: ($\bar X - 1.96(s/\sqrt n), \bar X + 1.96(s/\sqrt n)$)
+```{r}
+s    = 5    # standard deviation
+xbar = 7.10 # sample mean
+n    = 200
+
+lower = xbar - 1.96*(s/sqrt(n))
+upper = xbar + 1.96*(s/sqrt(n))
+lower
+upper
+```
+
+### Question 6
+The researchers are not satisfied with their confidence interval and want to do another study to find a shorter confidence interval. What should they change to ensure they find a shorter confidence interval?
+
+* They should increase their confidence level and increase their sample size.
+* They should increase their confidence level but decrease their sample size.
+* They should decrease their confidence level but increase their sample size.
+* They should decrease their confidence level and decrease their sample size.
+
+Solution: They should decrease their confidence level but increase their sample size. From question 4 we know that decreasing the confidence level will also decrease the interval width. We also know that as we increase the sample size, the standard error decreases and thus the width of the confidence interval also decreases.
+
+
+### Question 7
+Read the following data set into R:
+
+```{r, warning = FALSE, message=FALSE}
+library(tidyverse)
+library(readr)
+master <-read_csv("https://raw.githubusercontent.com/datasciencelabs/data/master/Master.csv")
+```
+
+The table includes information about baseball players. Which of the following best approximates the average weight of players born in or after 1986?
+
+* 218
+* 198
+* 208
+* 188
+
+Solution: 208
+```{r}
+players <- master %>% filter(birthYear >= 1986) %>%
+                      summarize(w = mean(weight))
+
+head(players)
+```
+
+
+
+### Question 8
+
+We are going to play a game. We will use a spinner that is 1/2 yellow, 1/4 red, and 1/4 blue. If you spin and land on yellow, you get 1 dollar. If you land on blue, you get 2 dollars. If you land on red, you lose 1 dollar. **There is no cost to play the game**. You can see the spinner here: https:static1.squarespace.com/static/54e50c15e4b058fc6806d068/t/54e7a969e4b09706d4a04a53/142446format=300w
+
+What is the expected winnings in the game? Hint: in class we call this the expected value of the sampling model.
+
+* -1/19
+* 0
+* $0.75
+* $1.25
+
+Solution: $0.75
+
+$\mathbb{E}[X] = P(X = yellow)*\$1 + P(X = blue)*\$2 + P(X = red)*-\$1$
+```{r}
+result <- 0.5*1 + 0.25*2 + 0.25*(-1)
+result
+```
+
+
+### Question 9
+Suppose I want to create a Shiny app that includes a slider input and histogram output. I want the slider to start at 1, end at 100 and have a default value of 25. Using the input number, call it `num`, I want to plot a histogram of `num` random values from a standard normal distribution. What is wrong with the Shiny app code below?
+```{r, eval=FALSE}
+library(shiny)
+
+# Define UI
+ui <- fluidPage(
+           sliderInput(inputId = "num",
+           label = "Choose a number",
+           value = 25, min = 1, max = 100),
+           
+           plotOutput(outputId = "hist")
+)
+
+# Define server
+server <- function(input, output) {
+            output$hist <- hist(rnorm(input$num))
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+* The input function is incorrect
+* `hist(rnorm(input$num))` should be inside a `renderPlot({})` function 
+* The inputId and label should be switched
+* All of the code should be inside `shinyApp()`
+
+Solution: `hist(rnorm(input$num))` should be inside a `renderPlot({})` function. Outputs need to be rendered in order for them to show up in a Shiny app. There is almost always a one to one correspndence between an output function and render function.
+
+### Question 10
+
+Which `dplyr` function should I use to keep specific columns in a data frame and remove those I don't want?
+
+* `filter()`
+* `summarize()`
+* `group_by()`
+* `select()`
+
+Solution: `select()`. The `filter()` function is for rows while the `select()` function is for columns.
