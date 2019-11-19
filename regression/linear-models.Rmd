@@ -1,0 +1,555 @@
+## Linear models 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+set.seed(1)
+options(digits = 3)
+library(tidyverse)
+library(dslabs)
+ds_theme_set()
+library(HistData)
+data("GaltonFamilies")
+galton_heights <- GaltonFamilies %>%
+  filter(childNum == 1 & gender == "male") %>%
+  select(father, childHeight) %>%
+  rename(son = childHeight)
+```
+
+## Linear Models
+
+Since Galton's original development, regression has become one of the most widely used tools in data science. One reason for this has to do with the fact that regression permits us to find relationships between two variables while adjusting for others, i.e., confounders. This has been particularly popular in fields where randomized experiments are hard to run, such as Economics and Epidemiology. When we are not able to randomly assign each individual to a treatment or control group, confounding is particularly prevalent. For example, consider estimating the effect of eating fast food on life expectancy using data collected from a random sample of people in a jurisdiction. Fast food consumers are more likely to be smokers, drinkers, and have lower incomes. Therefore, a naive regression model may lead to an overestimate of a negative health effect. So how do we adjust for confounding in practice?
+
+We have described how if data is bivariate normal then the conditional expectations follow the regression line. That the conditional expectation is a line is not an extra assumption but rather a result derived. However, in practice it is common to explicitly write down a model that describes the relationship between two or more variables using a _linear model_. 
+
+We note that "linear" here does not refer to lines exclusively, but rather to the fact that the **conditional expectation is linear combinations of known quantities**. In math a linear combination is an expression of variables, say $x$, $y$ and $z$, and a combination of constant terms that multiply them and add a shift, for example, $2 + 3x - 4y + 5z$. So when we write a linear model like this:
+$$
+\mathbb{E}[Y|X = x] = \beta_0 + \beta_1 x_1 + \beta_2 x_2
+$$
+
+$\beta_0 + \beta_1 x_1 + \beta_2 x_2$ is a linear combination of $x_1$ and $x_2$. The simplest linear model is a constant $\beta_0$, the second simplest is a line $\beta_0 + \beta_1 x$. 
+
+For Galton's data we would denote the $N$ observed father's heights with $x_1, \dots, x_n$. Then we would model the $N$ son heights we are trying to predict with 
+
+$$ 
+Y_i = \beta_0 + \beta_1 x_i + \varepsilon_i, \, i=1,\dots,N 
+$$
+
+where $x_i$ is the father's height, which is fixed (not random) due to the conditioning, and $Y_i$ is the random son's height that we want to predict. We further assume that $\varepsilon_i$ are independent from each other, have expected value 0 and the standard deviation, call it $\sigma$, does not depend on $i$. We know the $x_i$, but to have a useful model for prediction we need $\beta_0$ and $\beta_1$. We estimate these from the data. Once we do we can predict son's heights for any father's height $x$. 
+
+Note that if we further assume that the $\varepsilon$ is normally distributed, then this model is exactly the same one we derived earlier. A somewhat nuanced difference is that in the first approach we assumed the data was bivariate normal and the linear model was derived and not assumed. In practice, linear models are just assumed without necessarily assuming normality: the distribution of the $\varepsilon$s is not specified. But, nevertheless, if your data is bivariate normal, the above linear model holds. If your data is not bivariate normal, then you will need to have other ways of justifying the model.
+
+One reason linear models are popular is that they are interpretable. In the case of Galton's data we can interpret the data like this: due to inherited genes, the son's height prediction grows by $\beta_1$ for each inch we increase the father's height $x$. Because not all sons with fathers of height $x$ are of equal height, we need the term $\varepsilon$, which explains the remaining variability. This remaining variability includes the mother's genetic effect, environmental factors, and other biological randomness. 
+
+Note that, given how we wrote the model above, the intercept $\beta_0$ is not very interpretable as it is the predicted height of a son with a father with no height. Due to regression to the mean the prediction will usually be a bit larger than 0. To make the intercept parameter more interpretable we can rewrite the model slightly as
+
+$$ 
+Y_i = \beta_0 + \beta_1 (x_i - \bar{x}) + \varepsilon_i, \, i=1,\dots,N 
+$$
+
+thus changing $x_i$ to $x_i - \bar{x}$ in which case $\beta_0$ would be the height when $x_i = \bar{x}$ which is the son of an average height father.
+
+## Least Squares Estimates (LSE)
+
+For linear models to be useful we have to estimate the unknown $\beta$s. The standard approach in science is to find the values that minimize the distance of the fitted model to the data. The following is called the least squares (LS) equation and we will see it often in this lecture. For Galton's data we would write
+
+$$ 
+RSS = \sum_{i=1}^n \left\{  Y_i - \left(\beta_0 + \beta_1 x_i \right)\right\}^2 
+$$
+
+This quantity is called the residual sum of squares (RSS). Once we find the values that minimize the RSS, we will call the values the least squares estimates (LSE) and denote them with $\hat{\beta}_0$ and $\hat{\beta}_1$. 
+
+Let's write a function that computes the RSS for any pair of values  $\beta_0$ and $\beta_1$:
+
+```{r}
+rss <- function(beta0, beta1, data){
+  resid <- galton_heights$son - (beta0+beta1*galton_heights$father)
+  return(sum(resid^2))
+}
+```
+
+So for any pair of values we get an RSS. Here is a plot of the RSS as a function of $\beta_1$ when we keep the $\beta_0$ fixed at 25. 
+
+```{r rss-versus-estimate, fig.cap="Residual sum of squares obtained for several values of the parameters."}
+beta1 = seq(0, 1, len=nrow(galton_heights))
+results <- data.frame(beta1 = beta1,
+                      rss = sapply(beta1, rss, beta0 = 25))
+results %>% ggplot(aes(beta1, rss)) + 
+            geom_line() + 
+            geom_line(aes(beta1, rss), col=2)
+```
+
+We can see a clear minimum for $\beta_1$ at around 0.65. However, this minimum for $\beta_1$ is for when $\beta_0 = 25$. But we don't know if it minimizes the equation across all pairs of ($\beta_0, \beta_1$). 
+
+Trial and error here is not going to work. Instead, we will use calculus: take the partial derivatives, set them to 0 and solve. Of course, if we have many parameters, these equations can get rather complex. But there are functions in R that do these calculations for us. We will learn these soon. To learn the mathematics behind this you can consult a book on linear models. 
+
+### The `lm` function
+
+In R we can obtain the least squares estimates using the the `lm` function. To fit the model
+
+$$
+Y_i = \beta_0 + \beta_1 x_i + \varepsilon_i
+$$
+
+with $Y_i$ the son's height and $x_i$ the father's height we write:
+
+```{r}
+fit <- lm(son ~ father, data = galton_heights)
+fit
+```
+
+and obtain the lest squares estimates. The general way we use `lm` is by using the character `~` to let `lm` know which is the variable we are predicting (left) and which we are using to predict (right). The intercept is added automatically to the model that will be fit. 
+
+The object `fit` includes more information about the fit. We can use the function `summary` to extract more of this information.
+
+```{r}
+summary(fit)
+```
+
+To understand some of the columns included in this summary we need to remember that the LSE are random variables. Mathematical statistics gives us some ideas of the distribution of these random variables
+
+
+### LSE are random variables 
+
+The LSE are derived from the data $Y_1,\dots,Y_N$, which are random. This implies that our estimates are random variables. To see this we can run a Monte Carlo simulation in which we assume the son and father height data defines a population, take a random sample of size $N = 50$ and compute the regression slope coefficient for each one:
+
+```{r}
+B <- 1000
+N <- 50
+lse <- replicate(B, {
+   sample_n(galton_heights, N, replace = TRUE) %>% 
+   lm(son ~ father, data = .) %>% .$coef 
+})
+lse <- data.frame(beta_0 = lse[1,], beta_1 = lse[2,]) 
+```
+
+We can see the variability of the estimates by plotting their distributions:
+
+```{r, warning=FALSE, message=FALSE}
+library(gridExtra)
+p1 <- lse %>% ggplot(aes(beta_0)) + geom_histogram(binwidth = 5, color = "black") 
+p2 <- lse %>% ggplot(aes(beta_1)) + geom_histogram(binwidth = 0.1, color = "black") 
+grid.arrange(p1, p2, ncol = 2)
+```
+
+The reason these look normal is because the Central Limit Theorem applies here as well: for large enough $N$ the least squares estimates will be approximately normal with expected value $\beta_0$ and $\beta_1$ respectively. The standard errors are a bit complicated to compute but mathematical theory does allow us to compute them and they are included in the summary provided by the `lm` function. Here they are for one of our simulated data sets:
+
+```{r}
+ sample_n(galton_heights, N, replace = TRUE) %>% 
+   lm(son ~ father, data = .) %>% 
+   summary
+```
+
+You can see that the standard errors estimates reported by the `summary` are close to the standard errors from the simulation:
+
+```{r}
+lse %>% summarize(se_0 = sd(beta_0), se_1 = sd(beta_1))
+```
+
+The `summary` function also reports t-statistics (`t value`) and p-values (`Pr(>|t|)`). The t-statistic is not actually based on the central limit theorem but rather on the assumption that the $\varepsilon$s follow a normal distribution. Under this assumption, mathematical theory tells us that the LSE divided by their standard error, $\hat{\beta}_0 / \hat{\mbox{SE}}(\hat{\beta}_0 )$ and $\hat{\beta}_1 / \hat{\mbox{SE}}(\hat{\beta}_1 )$ follow a t-distribution with $N-p$ degrees of freedom with $p$ the number of parameters in our model. In the case of heights, $p=2$. The two p-values are testing the null hypotheses that $\beta_0 = 0$ and $\beta_1 = 0$ respectively. Note that, as we described previously, for large enough $N$ the CLT works and the t-distribution becomes almost the same as the normal distribution. Also note that we can construct confidence intervals, but we will soon learn about broom, an add-on package that makes this easy.
+
+We note here that although we do not show examples here, hypothesis testing with regression models is very commonly used in Epidemiology and Economics to make statements such as "the effect of A on B was statistically significant after adjusting for X, Y and Z". Note that several assumptions have to hold for these statements to hold.
+
+#### Advanced note
+
+Although interpretation is not straight-forward, it is also useful to know that the LSE can be strongly correlated.
+
+```{r}
+lse %>% summarise(cor(beta_0, beta_1))
+```
+
+However, the correlation depends on how the predictors are defined or transformed. Here we standardize father heights which changes $x_i$ to $x_i - \bar{x}$
+
+
+```{r}
+B <- 1000
+N <- 50
+lse <- replicate(B, {
+  sample_n(galton_heights, N, replace = TRUE) %>% 
+  mutate(father = father - mean(father)) %>%
+  lm(son ~ father, data = .) %>% .$coef 
+})
+cor(lse[1,], lse[2,]) 
+```
+
+### Predicted values are random variables 
+
+Once we fit our model, we can obtain predictions of $Y$ by plugging the estimates into the regression model. For example, if the father's height is $x$, then our prediction $\hat{Y}$ for the son's height will be:
+
+$$\hat{Y} = \hat{\beta}_0 + \hat{\beta}_1 x$$
+
+When we plot $\hat{Y}$ versus $x$ we see the regression line.
+
+Note that the prediction $\hat{Y}$ is also a random variable and mathematical theory tells us what the standard errors are. If we assume the errors are normal or have a large enough sample size, we can use theory to construct confidence intervals as well. In fact, the ggplot2 layer `geom_smooth(method = "lm")` that we previously used plots $\hat{Y}$ and surrounds it by confidence intervals:
+
+```{r}
+galton_heights %>% ggplot(aes(son, father)) +
+                   geom_point() +
+                   geom_smooth(method = "lm")
+```
+
+The R function `predict` takes an `lm` object as input and returns the prediction:
+
+
+```{r}
+galton_heights %>% 
+  mutate(Y_hat = predict(lm(son ~ father, data = .))) %>%
+  ggplot(aes(father, Y_hat)) +
+  geom_line()
+```
+
+If requested, the standard errors and other information from which we can construct confidence intervals is given:
+
+```{r}
+fit <- galton_heights %>% lm(son ~ father, data = .) 
+Y_hat <- predict(fit, se.fit = TRUE)
+names(Y_hat)
+```
+
+
+## Advanced dplyr: tibbles and `do`
+
+Let's go back to our birthweight example. In a previous lecture we saw that the histograms of (most) gestation strata confirm that the conditional distributions are normal:
+
+```{r}
+data <- read.table("KingCounty2001_data.txt", header = TRUE)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+data %>% filter(gestation %in% 34:42 ) %>%
+         ggplot(aes(bwt)) +
+         geom_histogram(color="black") +
+         xlab("Birth weight (grams)") +
+         facet_wrap(gestation~.)
+``` 
+
+We can estimate the regression line to predict birthweight from gestational age. We did this before for the mean gestation using the formula since we didn't know the `lm` function:
+
+```{r}
+summary_stats <- data %>% summarize(avg_gest = mean(gestation),
+                                    s_gest = sd(gestation),
+                                    avg_bwt = mean(bwt),
+                                    s_bwt = sd(bwt),
+                                    r = cor(bwt, gestation))
+
+reg_line <- summary_stats %>% summarize(slope = r*s_bwt/s_gest,
+                              intercept = avg_bwt - slope*avg_gest)
+
+reg_line
+```
+
+We can now use the `lm` function to see that we get the same result:
+
+```{r}
+m <- lm(bwt ~ gestation, data = data)
+summary(m)
+```
+
+Going back to the task of investigating the question of whether participation in ‘First Steps’ increases birthweights, we can incorporate participation in the program in a couple of ways. First, we can fit the same regression model we did above for each group separately, i.e. fit one model for those who participated and one for those who did not. 
+
+First, note that if we try to use the `lm` function to get the estimated slopes like this:
+
+```{r}
+data %>% group_by(firstep) %>%
+         lm(bwt ~ gestation, data = .) %>%
+        .$coef
+```
+
+we don't get what we want. The `lm` function ignored the `group_by`. This is expected because **`lm` is not part of the tidyverse and does not know how to handle the outcome of `group_by`**, a grouped _tibble_.
+
+
+### Tibbles
+
+When `summarize` receives the output of `group_by` it somehow knows which rows of the tables go with which groups. Where is this information stored in the data.frame? 
+
+```{r}
+data %>%  group_by(firstep) %>% head()
+```
+
+Note that there are no columns with this information. But, if you look closely at the output above you notice the line `A tibble: 6 x 17`. We can learn the class of the returned object using
+
+```{r}
+data %>%  group_by(firstep) %>% class()
+```
+
+The `tbl`, pronounced tibble, or `tbl_df`, is a special kind of data frame. We have seen them before because `tidyverse` functions such as `group_by` and `summarize` always return this type of data frame. The `group_by` function returns a special kind of `tbl`, the `grouped_df`. We will say more about these  later.
+
+The manipulation verbs, `select`, `filter`, `mutate`, and `arrange` preserve the class of the input: if they receive a data frame they return a data frame. But tibbles are the default data frame in the tidyverse. 
+
+Tibbles are very similar to data frames. You can think of them as a modern version of data frames. Here we briefly describe three important differences.
+
+
+#### Tibbles diplsay better 
+
+The print method for tibbles is more readable than that of data frames. To see this compare these two outputs:
+
+```{r, eval=FALSE}
+data
+```
+
+`Data` is a data frame with many rows and columns. Nevertheless the output shows everything, wraps around and is hard to read. It is so bad we don't print it here, we let you print it on your screen. If you convert this data frame to a tibble data frame, the output is much more readable:
+
+```{r}
+as_tibble(data)
+```
+
+#### Subsets of Tibbles are Tibbles
+
+If you subset the columns of a data frame you may get back an object that is not a data frame. For example
+
+```{r}
+class(data[,2])
+```
+
+is not a data frame. With tibbles this does not happen:
+
+```{r}
+class(as_tibble(data)[,2])
+```
+
+This is useful in the tidyverse since functions require data frames as input. 
+
+With tibbles, if you want to access the vector that defines a column, and not get back a data frame, you need to use the accessor `$`:
+
+```{r}
+class(as_tibble(data)$bwt)
+```
+
+A related feature is that tibbles will give you a warning if you try to access a column that does not exist. If we accidentally write `BWT` instead of `bwt`, this
+
+```{r}
+data$BWT
+```
+
+returns a `NULL` with no warning, which can make it harder to debug. In contrast this
+
+```{r}
+as_tibble(data)$BWT
+```
+
+gives you an informative warning.
+
+#### Tibbles can have complex entries
+
+While the columns of data frames need to be vectors of numbers, strings or Boolean, tibbles can have more complex objects such as lists or functions. Also note that we can create tibbles with `tibble` or `data_frame` functions:
+
+```{r}
+tibble(id = c(1, 2, 3), func = c(mean, median, sd))
+```
+
+
+#### Tibbles can be grouped
+
+The function `group_by` returns a special kind of tibble: a grouped tibble. This class stores information that lets you know which rows are in which groups. The tidyverse functions, in particular the `summarize` function, are aware of the group information. In our example above we saw that the `lm` function, which is not part of the tidyverse, does not know how to deal with grouped tibbles. The object is basically converted to a regular data frame and the function runs ignoring the groups. This is why we only get one pair of estimates:
+
+```{r}
+data %>%  group_by(firstep) %>%
+          lm(bwt ~ gestation, data = .)
+```
+
+To make these non-tidyverse functions integrate with the tidyverse, we will learn about `do`.
+
+### `do`
+
+The tidyverse functions know how to interpret grouped tibbles. Furthermore, to facilitate stringing commands through the pipe `%>%` tidyverse functions consistently return data frames, since this assures that the output of one is accepted as the input of another. 
+
+But most R functions do not recognize grouped tibbles nor do they return data frames. The `lm` function is an example. The `do` function serves as a bridge between R functions such as `lm` and the tidyverse. The `do` function understands grouped tibbles and always returns a data frame.
+
+So, let's try to use the `do` function to fit a regression line to each program group:
+
+```{r}
+data %>% group_by(firstep) %>%
+         do(fit = lm(bwt ~ gestation, data = .))
+```
+
+Notice that we did in fact fit a regression line to each strata. The `do` function will create a data frame with the first column being the strata value and a column named `fit` (we chose the name, but it can be anything). The column will contain the result of the `lm` call. Therefore, the returned tibble has a column with `lm` objects which is not very useful. 
+
+Also note that if we do not name a column then `do` will return the actual output of `lm`, not a data frame, and this will result in an error since `do` is expecting a data frame as output.
+
+```{r, eval=FALSE}
+data %>% group_by(firstep) %>%
+         do(lm(bwt ~ gestation, data = .))
+```
+
+`Error: Results 1, 2, 3, 4, 5, ... must be data frames, not lm`
+
+
+For a useful data frame to be constructed, the output of the function must be a data frame too. We could build a function that returns only what we want in the form of a data frame:
+
+```{r}
+get_slope <- function(data){
+  fit <- lm(bwt ~ gestation, data = data)
+  data.frame(slope = fit$coefficients[2], 
+             se = summary(fit)$coefficient[2,2])
+}
+```
+
+And then use `do` **without** naming the output, since we are already getting a data frame: 
+
+```{r}
+data %>% group_by(firstep) %>%
+         do(get_slope(.))
+```
+
+If we name the output then we get a column containing a data frame:
+
+```{r}
+data %>% group_by(firstep) %>%
+         do(slope = get_slope(.))
+```
+
+which is not very useful.
+
+We cover one last feature of `do`. If the data frame being returned has more than one row, these will be concatenated appropriately. Here is an example in which we return both estimated parameters:
+
+```{r}
+get_lse <- function(data){
+  fit <- lm(bwt ~ gestation, data = data)
+  data.frame(term = names(fit$coefficients),
+             slope = fit$coefficients, 
+             se = summary(fit)$coefficient[,2])
+}
+data %>% group_by(firstep) %>%
+         do(get_lse(.))
+```
+
+We can see that the slopes for each group are similar to each other and the overall slope before grouping by participation in the program. 
+
+If you think this is all a bit too complicated, you are not alone. To simplify things, we introduce the broom package which was designed to facilitate the use of model fitting functions, such as `lm`, with the tidyverse.
+
+## Broom
+
+Our original task was to provide an estimate and confidence interval for the slope estimates of each strata. The broom package will make this quite easy.
+
+Broom has three main functions, all of which extract information from the object returned by `lm` and return it in a tidyverse friendly data frame. These functions are `tidy`, `glance` and `augment`. The `tidy` function returns estimates and related information as a data frame:
+
+```{r}
+library(broom)
+fit <- lm(bwt ~ gestation, data = data)
+tidy(fit)
+```
+
+We can add other important summaries such as confidence intervals:
+
+```{r}
+tidy(fit, conf.int = TRUE)
+```
+
+Because the outcome is a data frame we can immediately use it with `do` and string together the commands that produce the table we are after:
+
+
+```{r}
+data %>% group_by(firstep) %>%
+         do(tidy(lm(bwt ~ gestation, data = .), conf.int = TRUE))
+```
+
+Because a data frame is returned we can filter and select the rows and columns we want:
+
+```{r}
+data %>% group_by(firstep) %>%
+         do(tidy(lm(bwt ~ gestation, data = .), conf.int = TRUE)) %>%
+         filter(term == "gestation") %>%
+         select(firstep, estimate, conf.low, conf.high)
+```
+
+A table like this can then be easily visualized with ggplot2:
+
+```{r}
+data %>% group_by(firstep) %>%
+         do(tidy(lm(bwt ~ gestation, data = .), conf.int = TRUE)) %>%
+         filter(term == "gestation") %>%
+         select(firstep, estimate, conf.low, conf.high) %>%
+         ggplot(aes(firstep, y = estimate, 
+                ymin = conf.low, ymax = conf.high)) +
+         geom_errorbar() +
+         geom_point()
+```
+
+Now we return to discussing our original task of determining if slopes changed. The plot we just made, using `do` and `broom`, shows that the confidence intervals overlap which provides a nice visual confirmation that our assumption that the slope does not change is safe.
+
+The other functions provided by broom, `glance` and `augment` relate to model-specific and observation-specific outcomes respectively. Here we can see the model fit summaries `glance` returns:
+
+```{r}
+glance(fit)
+```
+
+You can learn more about these summaries in any regression textbook. 
+
+## Adding covariates
+I decided to run separate models for each participant group in order to present tibbles and the `do` and `tidy` functions. The faster way to investigate the relationship between participation in the 'First Steps' program and birthweight and gestation is to add it as another covariate in the model:
+
+```{r}
+m <- lm(bwt ~ gestation + firstep, data = data)
+summary(m)
+```
+
+From the summary it seems as though participation in the 'First Steps' program is actually associated with an average decrease of 42 grams in birthweight. This result however, is not statistically significant and we have also not considered confounders like race and if the mother was on welfare. We know both of these variables are associated with both birthweight and participation in the program, so they should be incorporated into our model. We'll discuss confounding more in the next lecture file.
+
+ 
+## Measurement error models
+
+Up to now, all our linear regression examples have been applied to two or more random variables. We assume the pairs are bivariate normal and used this to motivate a linear model. This approach covers most real life examples of linear regression. The other major application comes from measurement error models. In these applications, it is common to have a non-random covariate, such as time, with randomness introduced from measurement error rather than sampling or natural variability.
+
+To understand these models, imagine you are Galileo in the 16th century trying to describe the velocity of a falling object. An assistant climbs the Tower of Pisa and drops a ball, while several other assistants record the position at different times. Let's simulate some data using the equations we know today and adding some measurement error:
+
+```{r}
+falling_object <- rfalling_object()
+```
+
+The assistants hand the data to Galileo and this is what he sees:
+
+```{r gravity, fig.cap="Simulated data for distance travelled versus time of falling object measured with error."}
+falling_object %>% 
+  ggplot(aes(time, observed_distance)) + 
+  geom_point() +
+  ylab("Distance in meters") + 
+  xlab("Time in seconds")
+```
+
+Galileo does not know the exact equation, but by looking at the plot above he deduces that the position should follow a parabola, which we can write like this
+
+$$ f(x) = \beta_0 + \beta_1 x + \beta_2 x^2$$
+
+The data does not fall exactly on a parabola. Galileo knows this is due to measurement error. His helpers make mistakes when measuring the distance. To account for this he models the data with:
+
+$$ Y_i = \beta_0 + \beta_1 x_i + \beta_2 x_i^2 + \varepsilon_i, i=1,\dots,n $$
+
+With $Y_i$ representing distance in meters, $x_i$ representing time in seconds, and $\varepsilon$ accounting for measurement error. The measurement error is assumed to be random, independent from each other, and having the same distribution for each $i$. We also assume that there is no bias which means the expected value $\mbox{E}[\varepsilon] = 0$.
+
+Note that this is a linear model because it is a linear combination of known quantities, $x$ and $x^2$, and unknown parameters (the $\beta$s). Unlike our previous examples, the $x$ are fixed quantities, we are not conditioning. 
+
+To pose a new physical theory and start making predictions about other falling objects, Galileo needs actual numbers, rather than unknown parameters. The LSE seem like a reasonable approach. How do we find the LSE?
+
+Note that the LSE calculations do not require the errors to be approximately normal. The `lm` function will find the $\beta$s that will minimize the residual sum of squares:
+
+```{r}
+fit <- falling_object %>% 
+  mutate(time_sq = time^2) %>% 
+  lm(observed_distance~time+time_sq, data=.)
+tidy(fit)
+```
+
+To check if the estimated parabola fits the data. The broom function `augment` let's us do this easily.
+
+```{r}
+augment(fit) %>% 
+  ggplot() +
+  geom_point(aes(time, observed_distance)) + 
+  geom_line(aes(time, .fitted), col = "blue")
+```
+
+
+Thanks to my high school physics teacher, I know that the equation for the trajectory of a falling object is: 
+
+$$d = h_0 + v_0 t -  0.5 \times 9.8 t^2$$
+
+with $h_0$ and $v_0$ the starting height and velocity respectively. The data we simulated above followed this equation and added measurement error to simulate `n` observations for dropping the ball $(v_0 = 0)$ from the tower of Pisa $(h_0 = 56.67)$. 
+
+These are consistent with the parameter estimates.
+
+```{r}
+tidy(fit, conf.int = TRUE)
+```
+
+The tower of Pisa height is within the confidence interval for $\beta_0$, the initial velocity 0 is in the confidence interval for $\beta_1$ (note the p-value is larger than 0.05), and the acceleration constant is in a confidence interval for -2 $\times \beta_2$.
+
+
