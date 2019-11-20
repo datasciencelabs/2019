@@ -383,7 +383,7 @@ summary(m)
 ```
 
 
-From the model we can see that participation in the First Steps program is still not significant, but that the effect size has decreased from an average birthweight decrease of 42 grams to an average birthweight decrease of 15.8 grams. 
+From the model we can see that participation in the First Steps program is still not significant, but that the effect size has decreased from an average birthweight decrease of 42 grams to an average birthweight decrease of 20.1 grams. 
 
 Now let's look at the effect of the First Steps program stratified by race category:
 
