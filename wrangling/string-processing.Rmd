@@ -623,7 +623,7 @@ Let's start by defining a simple pattern that matches this
 pattern_without_groups <- "^[4-7],\\d*$"
 ```
 
-We want to extract the digits so we can then form the new version using a period. These are our two groups, so we encapsulate them with parentheses:
+We want to extract the digits so we can then form the new version using an apostrophe These are our two groups, so we encapsulate them with parentheses:
 
 ```{r}
 pattern_with_groups <-  "^([4-7]),(\\d*)$"
@@ -657,7 +657,7 @@ str_extract(s, pattern_with_groups)
 
 Another powerful aspect of groups is that you can refer to the extracted values in a regex when searching and replacing. 
 
-The regex special character for the `i`-th groups is `\\i`. So `\\1` is the value extracted from the first group, `\\2` the value from the second and so on. So as a simple example, note that the following code will replace a comma by a period but only if it is between two digits:
+The regex special character for the `i`-th groups is `\\i`. So `\\1` is the value extracted from the first group, `\\2` the value from the second and so on. So as a simple example, note that the following code will replace a comma by an apostrophe but only if it is between two digits:
 
 ```{r}
 pattern_with_groups <-  "^([4-7]),(\\d*)$"
@@ -676,6 +676,7 @@ pattern_with_groups <-"^([4-7])\\s*[,\\.\\s+]\\s*(\\d*)$"
 ```
 
 Let's break this one down:
+
 - `^` = start of the string 
 - `[4-7]` = one digit, either 4,5,6 or 7
 - `\\s*` = none or more white space
